@@ -9,5 +9,4 @@ public class JavaOrchestratorApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(JavaOrchestratorApplication.class, args);
 	}
-
 }
