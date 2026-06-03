@@ -36,22 +36,23 @@ public class OrchestratorController {
             Long auditId = Long.valueOf(request.get("auditId").toString());
             String userPrompt = request.get("prompt").toString();
 
+            // Captura dinámica del lenguaje enviado por el Front (fallback a "sql" si llega nulo)
+            String language = request.get("language") != null ? request.get("language").toString() : "sql";
+
             if (auditId == null || userPrompt == null) {
                 return ResponseEntity.badRequest().body(Map.of("error", "auditId y prompt son obligatorios"));
             }
 
             // === BLINDAJE TOTAL DE POSTGRES ===
-            // === ASIGNACIÓN RELACIONAL REAL ===
             try {
                 if (!auditRepository.existsById(auditId)) {
-                    // Extraemos el ID del usuario real enviado por el Front
                     Long userId = Long.valueOf(request.get("userId").toString());
                     User actualStudent = userRepository.findById(userId).orElse(null);
 
                     if (actualStudent != null) {
                         Audit newAudit = new Audit();
                         newAudit.setId(auditId);
-                        newAudit.setStudent(actualStudent); // Ligamos la FK real
+                        newAudit.setStudent(actualStudent);
                         newAudit.setSubject("Programación 2");
                         newAudit.setStatus("PENDING");
 
@@ -66,16 +67,15 @@ public class OrchestratorController {
             }
             // ===================================
 
-            // Continúa el flujo síncrono hacia MongoDB Atlas que ya sabemos que responde perfecto
+            // Guardamos el input del usuario en MongoDB Atlas
             chatHistoryService.appendMessage(auditId, "user", userPrompt);
 
-            // Hablamos con la IA simulada
-            String aiResponse = aiService.generateResponse(userPrompt);
+            // LLAMADA CORREGIDA: Ahora le pasamos la variable language dinámica a la IA
+            String aiResponse = aiService.generateResponse(userPrompt, language);
 
-            // Guardamos la respuesta del bot en Mongo
+            // Guardamos la respuesta estructurada de la IA en Mongo
             ChatHistory updatedChat = chatHistoryService.appendMessage(auditId, "assistant", aiResponse);
 
-            // Respondemos con el JSON final al frontend de Streamlit
             return ResponseEntity.ok(updatedChat);
 
         } catch (Exception e) {
