@@ -2,7 +2,7 @@
 FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Copiamos el pom.xml y el código fuente
+# Copiamos los archivos de configuración y dependencias desde donde esté parado el Root Directory
 COPY pom.xml .
 COPY src ./src
 
@@ -13,7 +13,7 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Copiamos el .jar generado desde el paso de compilación
+# Copiamos el .jar generado buscando de forma elástica en la carpeta target
 COPY --from=build /app/target/*.jar app.jar
 
 # Exponemos el puerto estándar
